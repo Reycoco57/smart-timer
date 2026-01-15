@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SmartTimer 智能專注時光</title>
+    <style>
+        :root {
+            --bg-color: #FFF8E1; /* 柔和奶茶色背景 */
+            --primary-color: #8D6E63; /* 溫暖棕色 */
+            --accent-color: #AED581; /* 柔和草綠 */
+            --card-bg: #FFFFFF;
+            --text-color: #5D4037;
+            --shadow: 0 4px 12px rgba(141, 110, 99, 0.15);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            margin: 0; padding: 0;
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* 防止整體滾動，由內容區滾動 */
+        }
+
+        /* 頂部導航 */
+        .header {
+            padding: 20px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            background: var(--bg-color);
+            z-index: 10;
+        }
+
+        /* 金幣顯示 */
+        .coin-display {
+            display: inline-flex;
+            align-items: center;
+            background: #FFF;
+            padding: 5px 15px;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+        .coin-icon { color: #FFD54F; margin-right: 5px; }
+
+        /* 主要內容區 */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 20px 80px 20px; /* 底部留白給導航列 */
+        }
+
+        /* 分頁切換 */
+        .page { display: none; animation: fadeIn 0.3s ease; }
+        .page.active { display: block; }
+
+        /* 卡片樣式 */
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        /* 寵物區 */
+        .pet-area {
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            position: relative;
+        }
+        .pet-emoji { font-size: 4rem; animation: bounce 2s infinite; }
+        .pet-message { 
+            background: #E1F5FE; 
+            padding: 8px 12px; 
+            border-radius: 12px; 
+            font-size: 0.85rem; 
+            margin-top: 10px;
+            position: relative;
+        }
+        .pet-message::after {
+            content: ''; position: absolute; top: -5px; left: 50%;
+            margin-left: -5px; border-width: 0 5px 5px;
+            border-style: solid; border-color: #E1F5FE transparent;
+        }
+
+        /* 計時器 */
+        .timer-circle {
+            width: 180px; height: 180px;
+            border-radius: 50%;
+            border: 8px solid var(--accent-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 20px auto;
+        }
+
+        /* 按鈕 */
+        .btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: transform 0.1s;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-outline { background: transparent; border: 2px solid var(--primary-color); color: var(--primary-color); }
+
+        /* 商店列表 */
+        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .shop-item { 
+            background: #FFF; border-radius: 15px; padding: 15px; 
+            box-shadow: var(--shadow); text-align: center;
+        }
+        .shop-img { font-size: 2.5rem; display: block; margin-bottom: 5px; }
+
+        /* 好友列表 */
+        .friend-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 0; border-bottom: 1px solid #EEE;
+        }
+        .rank-badge { 
+            width: 24px; height: 24px; background: #FFD54F; 
+            color: white; border-radius: 50%; text-align: center; line-height: 24px; font-size: 0.8rem;
+        }
+
+        /* 底部導航列 */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: #FFF;
+            display: flex;
+            justify-content: space-around;
+            padding: 15px 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+        }
+        .nav-item {
+            text-align: center; color: #CCC; font-size: 0.8rem;
+            cursor: pointer;
+        }
+        .nav-item.active { color: var(--primary-color); font-weight: bold; }
+        .nav-icon { display: block; font-size: 1.5rem; margin-bottom: 3px; }
+
+        /* 動畫 */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+        /* 心理測驗 Modal */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 100;
+            justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #FFF; width: 85%; padding: 25px; border-radius: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="coin-display">
+            <span class="coin-icon">💰</span> <span id="coin-count">400</span>
+        </div>
+        <div id="header-title">專注之島</div>
+    </div>
+
+    <div class="main-content">
+        
+        <div id="home-page" class="page active">
+            <div class="card pet-area">
+                <div class="pet-emoji">🐹</div> <div class="pet-message" id="pet-msg">主人，今天要讀微積分嗎？我會陪著你！</div>
+            </div>
+
+            <div class="card">
+                <h3>專注計時</h3>
+                <div class="timer-circle" id="timer-display">25:00</div>
+                <button class="btn" onclick="toggleTimer()">開始專注</button>
+                <button class="btn btn-outline" style="margin-top:10px" onclick="openTest()">🔮 心理測驗：適合環境</button>
+            </div>
+        </div>
+
+        <div id="shop-page" class="page">
+            <h3 style="margin-left: 5px;">百貨商店 🏠</h3>
+            <p style="font-size: 0.9rem; color: #888; margin-bottom: 15px;">累積專注 50 小時解鎖更多商品 </p>
+            <div class="shop-grid">
+                <div class="shop-item">
+                    <span class="shop-img">🌻</span>
+                    <div>豪華種子碗</div>
+                    <small>200 金幣</small>
+                    <button class="btn" style="padding: 5px; font-size: 0.8rem; margin-top:5px">購買</button>
+                </div>
+                <div class="shop-item">
+                    <span class="shop-img">🎓</span>
+                    <div>學士帽</div>
+                    <small>300 金幣</small>
+                    <button class="btn" style="padding: 5px; font-size: 0.8rem; margin-top:5px">購買</button>
+                </div>
+                <div class="shop-item">
+                    <span class="shop-img">🐥</span>
+                    <div>夥伴：小雞</div>
+                    <small>需 100 小時</small>
+                    <button class="btn btn-outline" style="padding: 5px; font-size: 0.8rem; margin-top:5px" disabled>鎖定</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="friend-page" class="page">
+            <h3>好友專注榜 🏆</h3>
+            <div class="card">
+                <div class="friend-row">
+                    <div style="display:flex; align-items:center;">
+                        <span class="rank-badge" style="background:#FFD700">1</span>
+                        <span style="margin-left:10px; font-weight:bold;">小明</span>
+                    </div>
+                    <span>120 hr</span>
+                </div>
+                <div class="friend-row">
+                    <div style="display:flex; align-items:center;">
+                        <span class="rank-badge" style="background:#C0C0C0">2</span>
+                        <span style="margin-left:10px;">阿強</span>
+                    </div>
+                    <span>85 hr</span>
+                </div>
+                <div class="friend-row">
+                    <div style="display:flex; align-items:center;">
+                        <span class="rank-badge" style="background:#CD7F32">3</span>
+                        <span style="margin-left:10px;">我 (布丁)</span>
+                    </div>
+                    <span style="color:var(--primary-color); font-weight:bold;">48 hr</span>
+                </div>
+            </div>
+            <button class="btn btn-outline">＋ 邀請好友</button>
+        </div>
+
+        <div id="task-page" class="page">
+            <h3>今日任務清單 📝</h3>
+            <div class="card" style="text-align:left;">
+                <input type="checkbox" checked> 循環1：微積分習題 <br><br>
+                <input type="checkbox"> 循環2：英文單字 L5<br><br>
+                <input type="checkbox"> 循環3：程式設計作業
+            </div>
+            <h3>設定</h3>
+            <button class="btn btn-outline">切換寵物 (狗/貓/烏龜)</button>
+        </div>
+
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('home', this)">
+            <span class="nav-icon">⏱️</span>專注
+        </div>
+        <div class="nav-item" onclick="switchTab('shop', this)">
+            <span class="nav-icon">🏠</span>商店
+        </div>
+        <div class="nav-item" onclick="switchTab('friend', this)">
+            <span class="nav-icon">👥</span>好友
+        </div>
+        <div class="nav-item" onclick="switchTab('task', this)">
+            <span class="nav-icon">📝</span>任務
+        </div>
+    </div>
+
+    <div id="test-modal" class="modal">
+        <div class="modal-content">
+            <h3>心靈羅盤 🧭</h3>
+            <p>您現在喜歡安靜還是有點聲音？</p>
+            <button class="btn" onclick="closeTest('森林圖書館')">安靜 (圖書館)</button>
+            <button class="btn btn-outline" style="margin-top:10px" onclick="closeTest('Lo-fi 咖啡廳')">有點聲音 (咖啡廳)</button>
+        </div>
+    </div>
+
+    <script>
+        // 切換分頁功能
+        function switchTab(tabName, element) {
+            // 隱藏所有頁面
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            // 顯示目標頁面
+            document.getElementById(tabName + '-page').classList.add('active');
+            
+            // 更新導航樣式
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            element.classList.add('active');
+
+            // 更新標題
+            const titles = {'home': '專注之島', 'shop': '商店街', 'friend': '好友排行', 'task': '任務清單'};
+            document.getElementById('header-title').innerText = titles[tabName];
+        }
+
+        // 簡易計時器邏輯
+        let timer;
+        let isRunning = false;
+        let timeLeft = 25 * 60; // 25分鐘
+
+        function toggleTimer() {
+            const btn = event.target;
+            const display = document.getElementById('timer-display');
+            const msg = document.getElementById('pet-msg');
+
+            if (!isRunning) {
+                // 開始
+                isRunning = true;
+                btn.innerText = "放棄 (會變黑霧!)";
+                btn.style.backgroundColor = "#e57373"; // 警告色
+                msg.innerText = "噓... 布丁正在看著你努力喔！"; // 
+                
+                timer = setInterval(() => {
+                    timeLeft--;
+                    let m = Math.floor(timeLeft / 60);
+                    let s = timeLeft % 60;
+                    display.innerText = `${m}:${s < 10 ? '0'+s : s}`;
+                    if (timeLeft <= 0) {
+                        clearInterval(timer);
+                        alert("專注完成！獲得金幣！");
+                        isRunning = false;
+                    }
+                }, 1000);
+            } else {
+                // 停止
+                clearInterval(timer);
+                isRunning = false;
+                btn.innerText = "開始專注";
+                btn.style.backgroundColor = "#8D6E63"; // 恢復原色
+                msg.innerText = "嗚嗚... 黑霧又要回來了..."; // 
+                display.innerText = "25:00";
+                timeLeft = 25 * 60;
+            }
+        }
+
+        // 心理測驗互動
+        function openTest() {
+            document.getElementById('test-modal').style.display = 'flex';
+        }
+        function closeTest(result) {
+            document.getElementById('test-modal').style.display = 'none';
+            document.getElementById('pet-msg').innerText = `推薦環境：${result} `;
+            alert(`布丁推薦您前往：${result}`);
+        }
+    </script>
+</body>
+</html>
